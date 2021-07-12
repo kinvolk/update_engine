@@ -44,6 +44,14 @@ void PostinstallRunnerAction::PerformAction() {
                NULL);
   }
   if (rc < 0) {
+    LOG(INFO) << "Failed to mount install part as ext2/ext3. Trying btrfs.";
+    rc = mount(install_device.c_str(),
+               temp_rootfs_dir_.c_str(),
+               "btrfs",
+               mountflags,
+               "norecovery");
+  }
+  if (rc < 0) {
     LOG(ERROR) << "Unable to mount destination device " << install_device
                << " onto " << temp_rootfs_dir_;
     return;
