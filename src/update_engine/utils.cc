@@ -402,16 +402,24 @@ bool StringHasPrefix(const std::string& str, const std::string& prefix) {
 const std::string BootDevice() {
   char boot_path[PATH_MAX];
   struct stat stbuf;
+  dev_t root_dev;
 
-  if (stat("/usr", &stbuf) != 0) {
-    PLOG(ERROR) << "stat /usr failed:";
-    return "";
+  root_dev = rootdev_devt_from_mountpoint("/usr");
+  /* First search by mount point which works for btrfs and normal file systems,
+     then fall back to old behavior for propper error reporting */
+  if (root_dev == 0) {
+    /* Yields the containing dev_t in st_dev. */
+    if (stat("/usr", &stbuf) != 0) {
+      PLOG(ERROR) << "stat /usr failed:";
+      return "";
+    }
+    root_dev = stbuf.st_dev;
   }
 
   // Resolve the boot device path fully, including dereferencing
   // through dm-verity.
   int ret = rootdev_wrapper(boot_path, sizeof(boot_path), true, false,
-                            &stbuf.st_dev, NULL, NULL);
+                            &root_dev, NULL, NULL);
 
   if (ret < 0) {
     LOG(ERROR) << "rootdev failed to find the device for /usr";
