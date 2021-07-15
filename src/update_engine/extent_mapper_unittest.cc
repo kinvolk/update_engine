@@ -82,7 +82,7 @@ TEST(ExtentMapperTest, RunAsRootSparseFileTest) {
   vector<Extent> extents;
   EXPECT_TRUE(extent_mapper::ExtentsForFileFibmap(buf, &extents));
   unlink(buf);
-  EXPECT_EQ(3, extents.size());
+  ASSERT_EQ(3, extents.size());
   EXPECT_EQ(1, extents[0].num_blocks());
   EXPECT_EQ(2, extents[1].num_blocks());
   EXPECT_EQ(1, extents[2].num_blocks());

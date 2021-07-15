@@ -15,11 +15,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: install deps
       run: |
-        sudo apt install -y libblkid-dev libext2fs-dev libmount-dev curl unzip libdbus-glib-1-dev protobuf-compiler libbz2-dev libgflags-dev libssl-dev libgoogle-glog-dev libcurl4-openssl-dev libxml2-dev libprotobuf-dev cmake
+        sudo apt install -y libblkid-dev libext2fs-dev libmount-dev curl unzip libdbus-glib-1-dev protobuf-compiler libbz2-dev libgflags-dev libssl-dev libgoogle-glog-dev libcurl4-openssl-dev libxml2-dev libprotobuf-dev cmake wget
     - name: prep rootdev
       run: |
         curl -sSL -o /tmp/seismograph.zip https://github.com/kinvolk/seismograph/archive/flatcar-master.zip
-        cd /tmp && unzip /tmp/seismograph.zip && cd seismograph-flatcar-master && sh autogen.sh && ./configure && make && sudo make install
+        cd /tmp && unzip /tmp/seismograph.zip && cd seismograph-flatcar-master && sh autogen.sh && ./configure && make && sudo make install && sudo ldconfig
     - name: prep googletest
       ## because ubuntu libgtest-dev does not provide the libraries to link against...
       run: |
@@ -30,8 +30,8 @@ jobs:
     - name: configure
       run: ./configure
     - name: make
-      run: make
+      run: make -j$(nproc)
     - name: make check
-      run: make check
+      run: make check -j$(nproc)
       #- name: make distcheck
       #run: make distcheck

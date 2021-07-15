@@ -39,22 +39,25 @@ class OmahaRequestActionTest : public ::testing::Test {};
 
 namespace {
 
-MockSystemState mock_system_state;
-OmahaRequestParams kDefaultTestParams(
-    &mock_system_state,
-    OmahaRequestParams::kOsPlatform,
-    OmahaRequestParams::kOsVersion,
-    "service_pack",
-    "x86-generic",
-    OmahaRequestParams::kAppId,
-    "0.1.0.0",
-    "en-US",
-    "unittest",
-    "OEM MODEL 09235 7471",
-    "{8DA4B84F-2864-447D-84B7-C2D9B72924E7}",
-    false,  // delta okay
-    false,  // interactive
-    "http://url");
+OmahaRequestParams GetDefaultTestParams() {
+  static MockSystemState mock_system_state;
+  OmahaRequestParams kDefaultTestParams(
+      &mock_system_state,
+      OmahaRequestParams::kOsPlatform,
+      OmahaRequestParams::kOsVersion,
+      "service_pack",
+      "x86-generic",
+      OmahaRequestParams::kAppId,
+      "0.1.0.0",
+      "en-US",
+      "unittest",
+      "OEM MODEL 09235 7471",
+      "{8DA4B84F-2864-447D-84B7-C2D9B72924E7}",
+      false,  // delta okay
+      false,  // interactive
+      "http://url");
+  return kDefaultTestParams;
+}
 
 string GetNoUpdateResponse(const string& app_id) {
   return string(
@@ -195,7 +198,7 @@ TEST(OmahaRequestActionTest, NoUpdateTest) {
   OmahaResponse response;
   ASSERT_TRUE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       GetNoUpdateResponse(OmahaRequestParams::kAppId),
                       -1,
                       false,  // ping_only
@@ -209,7 +212,7 @@ TEST(OmahaRequestActionTest, ValidUpdateTest) {
   OmahaResponse response;
   ASSERT_TRUE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       GetUpdateResponse(OmahaRequestParams::kAppId,
                                         "1.2.3.4",  // version
                                         "http://more/info",
@@ -241,7 +244,7 @@ TEST(OmahaRequestActionTest, NoOutputPipeTest) {
   const string http_response(GetNoUpdateResponse(OmahaRequestParams::kAppId));
 
   MockSystemState mock_system_state;
-  OmahaRequestParams params = kDefaultTestParams;
+  OmahaRequestParams params = GetDefaultTestParams();
   mock_system_state.set_request_params(&params);
 
   ActionProcessor processor;
@@ -262,7 +265,7 @@ TEST(OmahaRequestActionTest, InvalidXmlTest) {
   OmahaResponse response;
   ASSERT_FALSE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "invalid xml>",
                       -1,
                       false,  // ping_only
@@ -276,7 +279,7 @@ TEST(OmahaRequestActionTest, EmptyResponseTest) {
   OmahaResponse response;
   ASSERT_FALSE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "",
                       -1,
                       false,  // ping_only
@@ -290,7 +293,7 @@ TEST(OmahaRequestActionTest, MissingStatusTest) {
   OmahaResponse response;
   ASSERT_FALSE(TestUpdateCheck(
       NULL,  // prefs
-      kDefaultTestParams,
+      GetDefaultTestParams(),
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response protocol=\"3.0\">"
       "<daystart elapsed_seconds=\"100\"/>"
       "<app appid=\"foo\" status=\"ok\">"
@@ -308,7 +311,7 @@ TEST(OmahaRequestActionTest, InvalidStatusTest) {
   OmahaResponse response;
   ASSERT_FALSE(TestUpdateCheck(
       NULL,  // prefs
-      kDefaultTestParams,
+      GetDefaultTestParams(),
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response protocol=\"3.0\">"
       "<daystart elapsed_seconds=\"100\"/>"
       "<app appid=\"foo\" status=\"ok\">"
@@ -326,7 +329,7 @@ TEST(OmahaRequestActionTest, MissingNodesetTest) {
   OmahaResponse response;
   ASSERT_FALSE(TestUpdateCheck(
       NULL,  // prefs
-      kDefaultTestParams,
+      GetDefaultTestParams(),
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response protocol=\"3.0\">"
       "<daystart elapsed_seconds=\"100\"/>"
       "<app appid=\"foo\" status=\"ok\">"
@@ -361,7 +364,7 @@ TEST(OmahaRequestActionTest, MissingFieldTest) {
 
   OmahaResponse response;
   ASSERT_TRUE(TestUpdateCheck(NULL,  // prefs
-                              kDefaultTestParams,
+                              GetDefaultTestParams(),
                               input_response,
                               -1,
                               false,  // ping_only
@@ -401,7 +404,7 @@ TEST(OmahaRequestActionTest, ConcatUrlSlashTest) {
 
   OmahaResponse response;
   ASSERT_TRUE(TestUpdateCheck(NULL,  // prefs
-                              kDefaultTestParams,
+                              GetDefaultTestParams(),
                               input_response,
                               -1,
                               false,  // ping_only
@@ -435,7 +438,7 @@ TEST(OmahaRequestActionTest, TerminateTransferTest) {
   GMainLoop *loop = g_main_loop_new(g_main_context_default(), FALSE);
 
   MockSystemState mock_system_state;
-  OmahaRequestParams params = kDefaultTestParams;
+  OmahaRequestParams params = GetDefaultTestParams();
   mock_system_state.set_request_params(&params);
   OmahaRequestAction action(&mock_system_state, NULL,
                             new MockHttpFetcher(http_response.data(),
@@ -503,7 +506,7 @@ TEST(OmahaRequestActionTest, XmlDecodeTest) {
   OmahaResponse response;
   ASSERT_TRUE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       GetUpdateResponse(OmahaRequestParams::kAppId,
                                         "1.2.3.4",  // version
                                         "testthe&lt;url",  // more info
@@ -529,7 +532,7 @@ TEST(OmahaRequestActionTest, ParseIntTest) {
   OmahaResponse response;
   ASSERT_TRUE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       GetUpdateResponse(OmahaRequestParams::kAppId,
                                         "1.2.3.4",  // version
                                         "theurl",  // more info
@@ -557,7 +560,7 @@ TEST(OmahaRequestActionTest, FormatUpdateCheckOutputTest) {
       .WillOnce(DoAll(SetArgumentPointee<1>(string("")), Return(true)));
   EXPECT_CALL(prefs, SetString(kPrefsPreviousVersion, _)).Times(1);
   ASSERT_FALSE(TestUpdateCheck(&prefs,
-                               kDefaultTestParams,
+                               GetDefaultTestParams(),
                                "invalid xml>",
                                -1,
                                false,  // ping_only
@@ -578,7 +581,7 @@ TEST(OmahaRequestActionTest, FormatUpdateCheckOutputTest) {
 
 TEST(OmahaRequestActionTest, FormatSuccessEventOutputTest) {
   vector<char> post_data;
-  TestEvent(kDefaultTestParams,
+  TestEvent(GetDefaultTestParams(),
             new OmahaEvent(OmahaEvent::kTypeUpdateDownloadStarted),
             "invalid xml>",
             &post_data);
@@ -595,7 +598,7 @@ TEST(OmahaRequestActionTest, FormatSuccessEventOutputTest) {
 
 TEST(OmahaRequestActionTest, FormatErrorEventOutputTest) {
   vector<char> post_data;
-  TestEvent(kDefaultTestParams,
+  TestEvent(GetDefaultTestParams(),
             new OmahaEvent(OmahaEvent::kTypeDownloadComplete,
                            OmahaEvent::kResultError,
                            kActionCodeError),
@@ -616,7 +619,7 @@ TEST(OmahaRequestActionTest, FormatErrorEventOutputTest) {
 TEST(OmahaRequestActionTest, IsEventTest) {
   string http_response("doesn't matter");
   MockSystemState mock_system_state;
-  OmahaRequestParams params = kDefaultTestParams;
+  OmahaRequestParams params = GetDefaultTestParams();
   mock_system_state.set_request_params(&params);
   OmahaRequestAction update_check_action(
       &mock_system_state,
@@ -626,7 +629,7 @@ TEST(OmahaRequestActionTest, IsEventTest) {
       false);
   EXPECT_FALSE(update_check_action.IsEvent());
 
-  params = kDefaultTestParams;
+  params = GetDefaultTestParams();
   mock_system_state.set_request_params(&params);
   OmahaRequestAction event_action(
       &mock_system_state,
@@ -736,7 +739,7 @@ TEST(OmahaRequestActionTest, PingTest) {
     vector<char> post_data;
     ASSERT_TRUE(
         TestUpdateCheck(&prefs,
-                        kDefaultTestParams,
+                        GetDefaultTestParams(),
                         GetNoUpdateResponse(OmahaRequestParams::kAppId),
                         -1,
                         ping_only,
@@ -761,7 +764,7 @@ TEST(OmahaRequestActionTest, ActivePingTest) {
   vector<char> post_data;
   ASSERT_TRUE(
       TestUpdateCheck(&prefs,
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       GetNoUpdateResponse(OmahaRequestParams::kAppId),
                       -1,
                       false,  // ping_only
@@ -777,7 +780,7 @@ TEST(OmahaRequestActionTest, NoElapsedSecondsTest) {
   NiceMock<PrefsMock> prefs;
   ASSERT_TRUE(
       TestUpdateCheck(&prefs,
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response "
                       "protocol=\"3.0\"><daystart blah=\"200\"/>"
                       "<app appid=\"foo\" status=\"ok\"><ping status=\"ok\"/>"
@@ -793,7 +796,7 @@ TEST(OmahaRequestActionTest, BadElapsedSecondsTest) {
   NiceMock<PrefsMock> prefs;
   ASSERT_TRUE(
       TestUpdateCheck(&prefs,
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response "
                       "protocol=\"3.0\"><daystart elapsed_seconds=\"x\"/>"
                       "<app appid=\"foo\" status=\"ok\"><ping status=\"ok\"/>"
@@ -809,7 +812,7 @@ TEST(OmahaRequestActionTest, NetworkFailureTest) {
   OmahaResponse response;
   ASSERT_FALSE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "",
                       501,
                       false,  // ping_only
@@ -824,7 +827,7 @@ TEST(OmahaRequestActionTest, NetworkFailureBadHTTPCodeTest) {
   OmahaResponse response;
   ASSERT_FALSE(
       TestUpdateCheck(NULL,  // prefs
-                      kDefaultTestParams,
+                      GetDefaultTestParams(),
                       "",
                       1500,
                       false,  // ping_only
