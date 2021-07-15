@@ -20,6 +20,7 @@ const char kPostinstallScript[] = "/postinst";
 
 void PostinstallRunnerAction::PerformAction() {
   CHECK(HasInputObject());
+  bool identical_partitions = false;
   const InstallPlan install_plan = GetInputObject();
   const string install_device = install_plan.partition_path;
   ScopedActionCompleter completer(processor_, this);
@@ -50,6 +51,15 @@ void PostinstallRunnerAction::PerformAction() {
                "btrfs",
                mountflags,
                "norecovery");
+    if (errno == EEXIST) {
+      /* When trying to mount an identical btrfs image twice because the old
+       * and new partition are identical, the kernel refuses because same UUIDs
+       * are linked to having a btrfs filesystem spread over multiple devices.
+       * Since the same image is used, we can run the postinstall action from
+       * the old/current partition. */
+      rc = 0;
+      identical_partitions = true;
+    }
   }
   if (rc < 0) {
     LOG(ERROR) << "Unable to mount destination device " << install_device
@@ -63,7 +73,7 @@ void PostinstallRunnerAction::PerformAction() {
   // Runs the postinstall script asynchronously to free up the main loop while
   // it's running.
   vector<string> command;
-  command.push_back(temp_rootfs_dir_ + kPostinstallScript);
+  command.push_back((identical_partitions ? "/usr" : temp_rootfs_dir_) + kPostinstallScript);
   command.push_back(install_device);
   command.insert(command.end(),
                  install_plan.postinst_args.begin(),
